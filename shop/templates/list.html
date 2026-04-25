@@ -1,0 +1,15 @@
+<h1>Products</h1>
+<table border='1'>
+    <tr>
+        <th>Name</th>
+        <th>Price</th>
+        <th>SKU</th>
+    </tr>
+    {% for product in products %}
+    <tr>
+        <td>{{ product.name }}</td>
+        <td>{{ product.price }}</td>
+        <td>{{ product.sku_code }}</td>
+    </tr>
+    {% endfor %}
+</table>
