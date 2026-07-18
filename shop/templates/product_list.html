@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+
+{% block title %}Shop Men's T-Shirts | TShirt Co.{% endblock %}
+{% block meta_description %}Browse our full collection of premium men's T-shirts. Filter by size and find your perfect fit.{% endblock %}
+
+{% block content %}
+
+<header class="page-header" aria-label="Shop header">
+  <div class="container">
+    <h1>Men's T-Shirts</h1>
+    <p>Quality crafted for everyday confidence</p>
+  </div>
+</header>
+
+<section class="section" aria-label="Product listing">
+  <div class="container">
+
+    <!-- Filter Bar -->
+    <form method="get" action="{% url 'product_list' %}" id="filter-form">
+      <div class="filter-bar" role="search" aria-label="Filter products">
+        <label for="id_size">Filter by Size:</label>
+        <select name="size" id="id_size" class="filter-select" onchange="this.form.submit()">
+          <option value="">All Sizes</option>
+          {% for sz in sizes %}
+          <option value="{{ sz }}" {% if size_filter == sz %}selected{% endif %}>{{ sz }}</option>
+          {% endfor %}
+        </select>
+        {% if size_filter %}
+        <a href="{% url 'product_list' %}" class="btn btn-ghost btn-sm" id="clear-filter-btn">
+          ✕ Clear Filter
+        </a>
+        {% endif %}
+        <span class="results-count">
+          {{ products|length }} item{{ products|length|pluralize }} found
+        </span>
+      </div>
+    </form>
+
+    <!-- Product Grid -->
+    {% if products %}
+    <div class="products-grid" role="list">
+      {% for product in products %}
+      <article class="product-card" role="listitem" aria-label="{{ product.name }}">
+        <a href="{% url 'product_detail' product.pk %}" aria-label="View {{ product.name }}">
+          <div class="product-card-image">
+            {% if product.is_featured %}
+            <span style="position:absolute;top:12px;left:12px;background:var(--mustard);color:var(--black);
+                          font-size:.65rem;font-weight:800;padding:3px 10px;border-radius:99px;
+                          letter-spacing:.08em;text-transform:uppercase;">Featured</span>
+            {% endif %}
+            <span class="product-placeholder-icon">👕</span>
+          </div>
+        </a>
+        <div class="product-card-body">
+          <h2 class="product-card-name" style="font-size:1rem;">{{ product.name }}</h2>
+          <p class="product-card-sku">SKU: {{ product.sku_code }}</p>
+          {% if product.available_sizes %}
+          <div class="product-sizes" aria-label="Available sizes">
+            {% for sz in product.available_sizes %}
+            <span class="size-chip">{{ sz }}</span>
+            {% endfor %}
+          </div>
+          {% endif %}
+          <div class="product-card-footer">
+            <span class="product-price">${{ product.price }}</span>
+            <a href="{% url 'product_detail' product.pk %}"
+               class="btn btn-primary btn-sm" id="view-product-{{ product.pk }}">
+              View →
+            </a>
+          </div>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-icon">🔍</div>
+      <h3>No T-Shirts Found</h3>
+      <p>
+        {% if size_filter %}
+          No shirts in size <strong>{{ size_filter }}</strong> are available right now.
+        {% else %}
+          Our collection is coming soon — check back shortly!
+        {% endif %}
+      </p>
+      {% if size_filter %}
+      <a href="{% url 'product_list' %}" class="btn btn-primary" id="view-all-btn">View All Shirts</a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+  </div>
+</section>
+
+{% endblock %}

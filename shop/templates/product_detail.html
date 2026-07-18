@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ product.name }} | TShirt Co.{% endblock %}
+{% block meta_description %}{{ product.name }} — {{ product.description|truncatechars:140 }}{% endblock %}
+
+{% block content %}
+
+<section class="section" aria-label="Product detail">
+  <div class="container">
+
+    <!-- Breadcrumb -->
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="{% url 'landing' %}">Home</a>
+      <span><a href="{% url 'product_list' %}">Shop</a></span>
+      <span>{{ product.name }}</span>
+    </nav>
+
+    <div class="product-detail">
+
+      <!-- Image -->
+      <div class="product-detail-image" aria-hidden="true">
+        <span class="product-detail-icon">👕</span>
+      </div>
+
+      <!-- Info -->
+      <div class="product-detail-info">
+        <p class="product-detail-sku">SKU: {{ product.sku_code }}</p>
+        <h1>{{ product.name }}</h1>
+        <div class="product-detail-price">${{ product.price }}</div>
+
+        {% if product.stock > 0 %}
+          {% if product.stock <= 5 %}
+          <span class="stock-badge low-stock">⚡ Only {{ product.stock }} left</span>
+          {% else %}
+          <span class="stock-badge in-stock">✓ In Stock</span>
+          {% endif %}
+        {% else %}
+        <span class="stock-badge" style="background:#FFEBEE;color:#C62828;">✕ Out of Stock</span>
+        {% endif %}
+
+        {% if product.description %}
+        <p class="product-detail-desc">{{ product.description }}</p>
+        {% else %}
+        <p class="product-detail-desc">
+          Premium quality men's T-shirt. Made from 100% ring-spun cotton — pre-shrunk,
+          ultra-soft, and designed for all-day comfort. A wardrobe essential.
+        </p>
+        {% endif %}
+
+        {% if product.stock > 0 %}
+        <form method="post" action="{% url 'add_to_cart' product.pk %}" id="add-to-cart-form">
+          {% csrf_token %}
+
+          <!-- Size Selector -->
+          {% if product.available_sizes %}
+          <div>
+            <span class="size-selector-label">Select Size *</span>
+            <div class="size-selector" role="group" aria-label="Size selection">
+              {% for sz in product.available_sizes %}
+              <button type="button"
+                      class="size-btn"
+                      id="size-btn-{{ sz }}"
+                      data-size="{{ sz }}"
+                      aria-pressed="false">
+                {{ sz }}
+              </button>
+              {% endfor %}
+            </div>
+            <input type="hidden" name="size" id="selected-size-input" value="" required />
+            <p id="size-error" style="color:var(--danger);font-size:.8rem;margin-top:-10px;margin-bottom:12px;display:none;">
+              Please select a size.
+            </p>
+          </div>
+          {% endif %}
+
+          <!-- Quantity -->
+          <div class="qty-selector" aria-label="Quantity">
+            <button type="button" class="qty-btn" id="qty-minus" aria-label="Decrease quantity">−</button>
+            <span class="qty-display" id="qty-value">1</span>
+            <button type="button" class="qty-btn" id="qty-plus" aria-label="Increase quantity">+</button>
+            <input type="hidden" name="quantity" id="qty-input" value="1" />
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-full" id="add-cart-submit">
+            🛒 Add to Cart
+          </button>
+        </form>
+        {% else %}
+        <button class="btn btn-outline btn-full" disabled>Out of Stock</button>
+        {% endif %}
+
+        <hr class="divider" style="margin:24px 0;" />
+
+        <!-- Info tiles -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:.82rem;color:var(--gray-600);">
+          <div>🚚 Free shipping over $50</div>
+          <div>↩️ 30-day returns</div>
+          <div>🧵 100% ring-spun cotton</div>
+          <div>🎨 Pre-shrunk & colorfast</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  // Size buttons
+  const sizeBtns = document.querySelectorAll('.size-btn');
+  const sizeInput = document.getElementById('selected-size-input');
+
+  sizeBtns.forEach(btn => {
+    btn.addEventListener('click', function () {
+      sizeBtns.forEach(b => { b.classList.remove('selected'); b.setAttribute('aria-pressed','false'); });
+      this.classList.add('selected');
+      this.setAttribute('aria-pressed','true');
+      sizeInput.value = this.dataset.size;
+      document.getElementById('size-error').style.display = 'none';
+    });
+  });
+
+  // Quantity buttons
+  let qty = 1;
+  const qtyVal = document.getElementById('qty-value');
+  const qtyInput = document.getElementById('qty-input');
+  const maxQty = {{ product.stock }};
+
+  document.getElementById('qty-minus').addEventListener('click', function () {
+    if (qty > 1) { qty--; qtyVal.textContent = qty; qtyInput.value = qty; }
+  });
+  document.getElementById('qty-plus').addEventListener('click', function () {
+    if (qty < maxQty) { qty++; qtyVal.textContent = qty; qtyInput.value = qty; }
+  });
+
+  // Form submit guard
+  const form = document.getElementById('add-to-cart-form');
+  if (form) {
+    form.addEventListener('submit', function (e) {
+      {% if product.available_sizes %}
+      if (!sizeInput.value) {
+        e.preventDefault();
+        document.getElementById('size-error').style.display = 'block';
+      }
+      {% endif %}
+    });
+  }
+</script>
+{% endblock %}

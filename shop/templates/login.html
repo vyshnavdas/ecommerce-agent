@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block title %}Login | TShirt Co.{% endblock %}
+{% block meta_description %}Login to your TShirt Co. account to view your orders and manage your profile.{% endblock %}
+
+{% block content %}
+<section class="auth-page" aria-label="Login">
+  <div class="container">
+    <div class="auth-card">
+      <h1>Welcome Back</h1>
+      <p class="auth-sub">Sign in to your TShirt Co. account.</p>
+
+      <form method="post" action="{% url 'login' %}{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}"
+            id="login-form">
+        {% csrf_token %}
+
+        <div class="form-group">
+          <label class="form-label" for="id_login_username">Username</label>
+          <input type="text" name="username" id="id_login_username"
+                 class="form-control" placeholder="johndoe" required autocomplete="username" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="id_login_password">Password</label>
+          <input type="password" name="password" id="id_login_password"
+                 class="form-control" placeholder="Your password" required
+                 autocomplete="current-password" />
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-full" id="login-submit-btn">
+          Login →
+        </button>
+      </form>
+
+      <p class="auth-footer">
+        Don't have an account? <a href="{% url 'register' %}">Sign up free</a>
+      </p>
+    </div>
+  </div>
+</section>
+{% endblock %}

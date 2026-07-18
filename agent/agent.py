@@ -1,14 +1,13 @@
 import os
 from dotenv import load_dotenv
-from langchain_groq import ChatGroq
-from langchain.agents import create_agent, AgentState
+from langchain.agents import create_agent
 from langgraph.checkpoint.postgres import PostgresSaver
-from .tools import add_product, update_product, delete_product
-from langchain.messages import RemoveMessage
+from .tools import add_product, update_product, delete_product, analytics_tool
+from langchain.messages import RemoveMessage, AIMessage
 from langgraph.graph.message import REMOVE_ALL_MESSAGES
 from langchain.agents.middleware import before_model
-from langgraph.runtime import Runtime
-from typing import Any
+from langchain_groq import ChatGroq
+from datetime import datetime
 
 load_dotenv()
 
@@ -19,41 +18,78 @@ checkpointer = saver_cm.__enter__()
 checkpointer.setup()
 
 model = ChatGroq(
-    model="qwen/qwen3-32b",
-    temperature=0,
-    streaming=True,
-)
+        model="qwen/qwen3-32b",
+        temperature=0,
+    )
 
-tools = [add_product, update_product, delete_product]
+tools = [add_product, update_product, delete_product, analytics_tool]
 
-SYSTEM_PROMPT = """
-You are an AI assistant that manages an e-commerce store.
+current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+SYSTEM_PROMPT = f"""
+    You are an AI assistant that manages an e-commerce store using tools.
+    
+    Current date and time: {current_time}
+    
+    Your responsibilities include:
+    - Managing products (add, update, delete)
+    - Answering analytics and reporting queries using database tools
 
-Rules:
-- Do not use any  markup language in replies
-- Only modify the store using the provided tools
-- If a user asks to add or update a product, call the appropriate tool
-- Be concise and clear in responses
-- If you need any additional details for accessing a tool, always ask
-- Do not delete the product without the confirmation
-"""
+    General Rules:
+    - Be concise, clear, and factual
+    - Never guess or assume missing data
+    - Ask the user for clarification if required
+
+    Tool Usage Rules:
+    - ALWAYS use tools when performing actions or retrieving data
+    - NEVER perform operations or answer analytics questions directly without tools
+
+    Product Management:
+    - Use add_product when creating a product
+    - Use update_product when modifying a product
+    - Use delete_product only after explicit user confirmation
+
+    Analytics:
+    - Use analytics_tool for ANY query related to:
+    - sales (today, weekly, monthly, etc.)
+    - revenue or profit
+    - product performance
+    - inventory insights
+    - reports or statistics
+    - NEVER generate SQL or database queries in your response
+    - ALWAYS rely on analytics_tool for data retrieval
+    - You don't need to generate sql queries and don't ask user for sql queries 
+
+    Behavior:
+    - If a request is ambiguous, ask follow-up questions before using a tool
+    - If the user asks for confirmation (especially delete), wait before proceeding
+    - If a tool fails, explain the issue clearly
+
+    Important:
+    - You are a tool-using assistant, not a knowledge-based chatbot
+    - Your answers must be based on tool outputs, not assumptions
+    - 
+    Do not delete the product without asking for an confirmation
+    """
 
 @before_model
-def trim_messages(state: AgentState, runtime: Runtime) -> dict[str, Any] | None:
+def trim_messages(state, runtime):
     messages = state["messages"]
-    
-    KEEP_RECENT = 10
-    
-    if len(messages) <= 3:
-        return None
-    
 
-    recent_messages = messages[-KEEP_RECENT:]
-    
+    # STEP 1: keep last N messages FIRST
+    MAX_MESSAGES = 5
+    recent = messages[-MAX_MESSAGES:]
+
+    # STEP 2: remove reasoning_content only from recent messages
+    cleaned = []
+    for msg in recent:
+        if isinstance(msg, AIMessage):
+            msg.additional_kwargs.pop("reasoning_content", None)
+        cleaned.append(msg)
+
     return {
         "messages": [
             RemoveMessage(id=REMOVE_ALL_MESSAGES),
-            *recent_messages
+            *cleaned
         ]
     }
 

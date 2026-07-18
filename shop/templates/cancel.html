@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block title %}Payment Cancelled | TShirt Co.{% endblock %}
+
+{% block content %}
+<section class="result-page" aria-label="Payment cancelled">
+  <div class="container">
+    <div class="result-card">
+      <div class="result-icon">😞</div>
+      <h1 style="color:var(--charcoal);">Payment Cancelled</h1>
+      <p>
+        Your payment was not completed. Your cart items are still saved —
+        feel free to try again whenever you're ready.
+      </p>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+        <a href="{% url 'cart_detail' %}" class="btn btn-primary" id="return-to-cart-btn">
+          Return to Cart
+        </a>
+        <a href="{% url 'product_list' %}" class="btn btn-outline" id="browse-more-btn">
+          Browse More
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

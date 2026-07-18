@@ -1,0 +1,120 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="{% block meta_description %}TShirt Co. — Premium Men's T-Shirts{% endblock %}" />
+  <title>{% block title %}T-SHIRTS | Store{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'shop/css/style.css' %}" />
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+  <!-- ===== NAVBAR ===== -->
+  <nav class="navbar" role="navigation" aria-label="Main navigation">
+
+    <!-- Left: nav links -->
+    <ul class="navbar-nav" role="list">
+      <li><a href="{% url 'product_list' %}" id="nav-buy">Buy T-Shirts</a></li>
+      <li><a href="{% url 'product_list' %}" id="nav-men">Men</a></li>
+      <li><a href="{% url 'landing' %}" id="nav-about">About</a></li>
+      <li><a href="#" id="nav-contact">Contact</a></li>
+    </ul>
+
+    <!-- Center: brand -->
+    <a href="{% url 'landing' %}" class="navbar-brand" id="nav-brand" aria-label="TShirt Co. Home">
+      <span class="brand-name">T-SHIRTS</span>
+      <span class="brand-sub">s &nbsp; t &nbsp; o &nbsp; r &nbsp; e</span>
+    </a>
+
+    <!-- Right: actions -->
+    <div class="navbar-actions">
+      <a href="{% url 'product_list' %}" class="nav-icon-btn" id="nav-search" aria-label="Search">🔍</a>
+
+      {% if cart_count > 0 %}
+        <span class="nav-price">${{ cart_total|default:"0.00" }}</span>
+      {% endif %}
+
+      <div class="nav-cart-wrap">
+        <a href="{% url 'cart_detail' %}" class="nav-icon-btn" id="nav-cart" aria-label="Shopping cart">🛒</a>
+        {% if cart_count > 0 %}
+          <span class="cart-badge">{{ cart_count }}</span>
+        {% endif %}
+      </div>
+
+      {% if user.is_authenticated %}
+        <a href="{% url 'account' %}" class="nav-login" id="nav-account">{{ user.username }}</a>
+        <a href="{% url 'logout' %}" class="nav-login" id="nav-logout">Logout</a>
+      {% else %}
+        <a href="{% url 'login' %}" class="nav-login" id="nav-login">Log In</a>
+        <a href="{% url 'register' %}" class="btn btn-primary btn-sm" id="nav-register">Sign Up</a>
+      {% endif %}
+    </div>
+  </nav>
+
+  <!-- Flash messages -->
+  {% if messages %}
+  <div class="messages-list" aria-live="polite">
+    {% for message in messages %}
+    <div class="alert alert-{% if message.tags == 'error' %}error{% elif message.tags == 'warning' %}warning{% elif message.tags == 'success' %}success{% else %}info{% endif %}">
+      {% if message.tags == 'success' %}✅{% elif message.tags == 'error' %}❌{% elif message.tags == 'warning' %}⚠️{% else %}ℹ️{% endif %}
+      {{ message }}
+    </div>
+    {% endfor %}
+  </div>
+  <script>
+    setTimeout(function(){
+      var el = document.querySelector('.messages-list');
+      if(el){ el.style.opacity='0'; el.style.transition='opacity .4s'; setTimeout(function(){el.style.display='none';},400); }
+    }, 3800);
+  </script>
+  {% endif %}
+
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Footer -->
+  <footer role="contentinfo">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <div class="footer-brand">T-SHIRTS <span>store</span></div>
+          <p class="footer-tagline">
+            Premium quality men's T-shirts crafted with care.<br />
+            Simple style, unmatched comfort.
+          </p>
+        </div>
+        <div class="footer-col">
+          <h5>Shop</h5>
+          <a href="{% url 'product_list' %}">All T-Shirts</a>
+          <a href="{% url 'product_list' %}?size=S">Size S</a>
+          <a href="{% url 'product_list' %}?size=M">Size M</a>
+          <a href="{% url 'product_list' %}?size=L">Size L</a>
+        </div>
+        <div class="footer-col">
+          <h5>Account</h5>
+          <a href="{% url 'register' %}">Register</a>
+          <a href="{% url 'login' %}">Login</a>
+          <a href="{% url 'account' %}">Orders</a>
+          <a href="{% url 'cart_detail' %}">Cart</a>
+        </div>
+        <div class="footer-col">
+          <h5>Info</h5>
+          <a href="#">Sizing Guide</a>
+          <a href="#">Shipping Policy</a>
+          <a href="#">Returns</a>
+          <a href="#">Contact</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>© 2026 T-Shirts Store. All rights reserved.</span>
+        <span>Secured by Stripe 🔒</span>
+      </div>
+    </div>
+  </footer>
+
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

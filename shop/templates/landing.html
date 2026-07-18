@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+
+{% block title %}T-SHIRTS | Men's Premium Store{% endblock %}
+{% block meta_description %}Discover premium quality men's T-shirts. Minimal design, maximum comfort. Free shipping and easy returns.{% endblock %}
+
+{% block content %}
+
+<!-- ===== HERO ===== -->
+<section class="hero" aria-label="Hero banner">
+  <div class="hero-content">
+    <span class="hero-eyebrow">Men</span>
+    <h1>Slick.<br />Modern.<br /><span class="accent">Awesome.</span></h1>
+    <div class="hero-actions">
+      <a href="{% url 'product_list' %}" class="btn btn-primary btn-lg" id="hero-shop-btn">
+        Shop Collection
+      </a>
+      <a href="#featured" class="btn btn-outline btn-lg" id="hero-explore-btn">
+        Explore
+      </a>
+    </div>
+    <div class="hero-stats">
+      <div class="stat-item">
+        <span class="stat-num">500+</span>
+        <span class="stat-label">Happy Customers</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-num">100%</span>
+        <span class="stat-label">Cotton</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-num">Free</span>
+        <span class="stat-label">Returns</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FEATURES STRIP ===== -->
+<section class="features-strip" aria-label="Key features">
+  <div class="container">
+    <div class="features-grid">
+      <div class="feature-item">
+        <span class="feature-icon">🧵</span>
+        <h4>Premium Cotton</h4>
+        <p>100% ring-spun cotton, pre-shrunk and ultra-soft from day one.</p>
+      </div>
+      <div class="feature-item">
+        <span class="feature-icon">✂️</span>
+        <h4>Precision Cut</h4>
+        <p>Clean, minimal cuts that pair with anything in your wardrobe.</p>
+      </div>
+      <div class="feature-item">
+        <span class="feature-icon">🚚</span>
+        <h4>Free Shipping</h4>
+        <p>On all orders over $50. Delivered in 3–5 business days.</p>
+      </div>
+      <div class="feature-item">
+        <span class="feature-icon">↩️</span>
+        <h4>Easy Returns</h4>
+        <p>30-day hassle-free returns. No questions asked.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FEATURED PRODUCTS ===== -->
+<section class="section" id="featured" aria-label="Featured products">
+  <div class="container">
+    <div class="section-header">
+      <span class="eyebrow">Handpicked</span>
+      <h2>Featured T-Shirts</h2>
+      <p>Our most loved styles — curated just for you.</p>
+    </div>
+
+    {% if featured %}
+    <div class="products-grid">
+      {% for product in featured %}
+      <article class="product-card" aria-label="{{ product.name }}">
+        <a href="{% url 'product_detail' product.pk %}" aria-label="View {{ product.name }}">
+          <div class="product-card-image">
+            <span class="featured-tag">Featured</span>
+            <span class="product-placeholder-icon">👕</span>
+          </div>
+        </a>
+        <div class="product-card-body">
+          <h3 class="product-card-name">{{ product.name }}</h3>
+          <p class="product-card-sku">SKU: {{ product.sku_code }}</p>
+          {% if product.available_sizes %}
+          <div class="product-sizes" aria-label="Available sizes">
+            {% for sz in product.available_sizes %}
+            <span class="size-chip">{{ sz }}</span>
+            {% endfor %}
+          </div>
+          {% endif %}
+          <div class="product-card-footer">
+            <span class="product-price">${{ product.price }}</span>
+            <a href="{% url 'product_detail' product.pk %}"
+               class="btn btn-primary btn-sm" id="feat-view-{{ product.pk }}">
+              View
+            </a>
+          </div>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-icon">👕</div>
+      <h3>Coming Soon</h3>
+      <p>Featured products will appear here once added via admin.</p>
+      <a href="{% url 'product_list' %}" class="btn btn-primary" id="landing-shop-all-btn">Browse All</a>
+    </div>
+    {% endif %}
+
+    <div style="text-align:center;margin-top:48px;">
+      <a href="{% url 'product_list' %}" class="btn btn-outline btn-lg" id="landing-all-btn">
+        View All T-Shirts →
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ===== CTA BAND ===== -->
+<section class="cta-band" aria-label="Call to action">
+  <div class="container">
+    <h2>Ready to Upgrade Your Wardrobe?</h2>
+    <p>Explore our full collection — every cut, every size, every style.</p>
+    <a href="{% url 'product_list' %}" class="btn btn-primary btn-lg" id="cta-shop-btn">
+      Shop the Collection
+    </a>
+  </div>
+</section>
+
+{% endblock %}

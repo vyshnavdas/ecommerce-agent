@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+
+{% block title %}Your Cart | TShirt Co.{% endblock %}
+{% block meta_description %}Review your TShirt Co. shopping cart and proceed to secure checkout.{% endblock %}
+
+{% block content %}
+
+<header class="page-header" aria-label="Cart header">
+  <div class="container">
+    <h1>Shopping Cart</h1>
+    <p>Review your items before checkout</p>
+  </div>
+</header>
+
+<section class="section" aria-label="Cart contents">
+  <div class="container">
+
+    {% if cart.items.all %}
+    <div class="cart-layout">
+
+      <!-- Cart Items -->
+      <div>
+        <div class="cart-items-list" role="list" aria-label="Cart items">
+          {% for item in cart.items.all %}
+          <div class="cart-item-card" role="listitem" aria-label="{{ item.product.name }}">
+            <div class="cart-item-thumb" aria-hidden="true">👕</div>
+            <div class="cart-item-info">
+              <h3 class="cart-item-name">{{ item.product.name }}</h3>
+              <p class="cart-item-meta">
+                {% if item.size %}Size: <strong>{{ item.size }}</strong> · {% endif %}
+                ${{ item.product.price }} each
+              </p>
+              <!-- Qty controls -->
+              <div class="cart-item-qty">
+                <form method="post" action="{% url 'update_cart' item.id %}" style="display:inline;">
+                  {% csrf_token %}
+                  <input type="hidden" name="quantity" value="{{ item.quantity|add:'-1' }}" />
+                  <button type="submit" class="cart-qty-btn" aria-label="Decrease quantity">−</button>
+                </form>
+                <span style="font-weight:700;min-width:24px;text-align:center;">{{ item.quantity }}</span>
+                <form method="post" action="{% url 'update_cart' item.id %}" style="display:inline;">
+                  {% csrf_token %}
+                  <input type="hidden" name="quantity" value="{{ item.quantity|add:'1' }}" />
+                  <button type="submit" class="cart-qty-btn" aria-label="Increase quantity">+</button>
+                </form>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:12px;">
+              <span class="cart-item-price">${{ item.subtotal }}</span>
+              <form method="post" action="{% url 'remove_from_cart' item.id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger btn-sm"
+                        aria-label="Remove {{ item.product.name }} from cart"
+                        id="remove-item-{{ item.id }}">
+                  Remove
+                </button>
+              </form>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+
+        <div style="margin-top:24px;">
+          <a href="{% url 'product_list' %}" class="btn btn-outline" id="continue-shopping-btn">
+            ← Continue Shopping
+          </a>
+        </div>
+      </div>
+
+      <!-- Order Summary -->
+      <aside class="order-summary" aria-label="Order summary">
+        <h3>Order Summary</h3>
+        <div class="summary-row">
+          <span>Subtotal ({{ cart.item_count }} item{{ cart.item_count|pluralize }})</span>
+          <span>${{ cart.total }}</span>
+        </div>
+        <div class="summary-row">
+          <span>Shipping</span>
+          <span>
+            {% if cart.total >= 50 %}
+              <span style="color:var(--mustard);font-weight:600;">Free</span>
+            {% else %}
+              $5.99
+            {% endif %}
+          </span>
+        </div>
+        <div class="summary-row total">
+          <span>Total</span>
+          <span class="amount">
+            {% if cart.total >= 50 %}
+              ${{ cart.total }}
+            {% else %}
+              ${{ cart.total|floatformat:2 }}
+            {% endif %}
+          </span>
+        </div>
+        <div style="margin-top:24px;">
+          <a href="{% url 'checkout' %}" class="btn btn-primary btn-full" id="checkout-btn">
+            Proceed to Checkout →
+          </a>
+        </div>
+        {% if cart.total < 50 %}
+        <p style="text-align:center;margin-top:12px;font-size:.78rem;color:var(--gray-400);">
+          Add ${{ cart.total|floatformat:2 }} more for free shipping
+        </p>
+        {% endif %}
+        <div style="text-align:center;margin-top:20px;font-size:.75rem;color:var(--gray-400);">
+          🔒 Secured by Stripe
+        </div>
+      </aside>
+
+    </div>
+
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-icon">🛒</div>
+      <h3>Your Cart is Empty</h3>
+      <p>Looks like you haven't added any T-shirts yet.</p>
+      <a href="{% url 'product_list' %}" class="btn btn-primary" id="shop-from-cart-btn">
+        Browse T-Shirts →
+      </a>
+    </div>
+    {% endif %}
+
+  </div>
+</section>
+
+{% endblock %}

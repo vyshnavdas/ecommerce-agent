@@ -1,6 +1,9 @@
 from shop.models import Product, ProductImage
 import uuid
 from langchain.tools import tool
+from .tools_helper import generate_sql, validate_sql, execute_sql
+from langchain_groq import ChatGroq
+import os 
 
 @tool
 def add_product(name: str, price: float, stock: int, image_urls: list[str] = []) -> str:
@@ -57,9 +60,6 @@ def update_product(sku_code: str,
 
     return f"Product {product.name} updated successfully."
 
-from langchain_core.tools import tool
-from shop.models import Product
-
 
 @tool
 def delete_product(sku_code: str, confirm: bool = False) -> str:
@@ -79,4 +79,42 @@ def delete_product(sku_code: str, confirm: bool = False) -> str:
     product.delete()
     return f"✅ Product '{product.name}' (SKU {sku_code}) deleted."
     
+    
+@tool
+def analytics_tool(query: str) -> str:
+    """
+    Executes analytics queries on the database.
+
+    IMPORTANT:
+    - Input is natural language (NOT SQL)
+    - This tool automatically converts it to SQL and executes it
+    - ALWAYS use this tool for:
+        - sales reports
+        - revenue
+        - product analytics
+        - inventory insights
+
+    DO NOT ask the user for SQL.
+    DO NOT refuse analytics queries.
+    NEVER ask the user for schema clarification
+    """
+    try:
+        model = ChatGroq(
+            model="llama-3.1-8b-instant",
+            temperature=0,
+            api_key=os.getenv("GROQ_SQL_API_KEY"),
+        )
+        sql = generate_sql(query, model)
+
+        validate_sql(sql)
+
+        result = execute_sql(sql)
+
+        if not result:
+            return "No data found."
+
+        return f"Query result: {result}"
+
+    except Exception as e:
+        return f"Error: {str(e)}"
 

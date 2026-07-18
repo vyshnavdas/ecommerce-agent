@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+
+{% block title %}My Account | TShirt Co.{% endblock %}
+{% block meta_description %}View your TShirt Co. order history and account details.{% endblock %}
+
+{% block content %}
+
+<header class="account-header" aria-label="Account header">
+  <div class="container">
+    <h1>My Account</h1>
+    <p>Welcome back, <strong style="color:var(--mustard);">{{ user.username }}</strong></p>
+  </div>
+</header>
+
+<section class="section" aria-label="Order history">
+  <div class="container">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;flex-wrap:wrap;gap:12px;">
+      <h2 style="font-size:1.5rem;">Order History</h2>
+      <a href="{% url 'product_list' %}" class="btn btn-primary btn-sm" id="account-shop-btn">
+        Shop More →
+      </a>
+    </div>
+
+    {% if orders %}
+    <div role="list" aria-label="Your orders">
+      {% for order in orders %}
+      <div class="order-card" role="listitem" aria-label="Order {{ order.id }}">
+        <div class="order-card-header">
+          <div>
+            <span class="order-id">Order #{{ order.id }}</span>
+            <span style="font-size:.8rem;color:var(--gray-600);margin-left:12px;">
+              {{ order.created_at|date:"M d, Y" }}
+            </span>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span class="status-badge status-{{ order.status }}">{{ order.get_status_display }}</span>
+            <span style="font-family:'Playfair Display',serif;font-weight:700;">
+              ${{ order.total_amount }}
+            </span>
+          </div>
+        </div>
+        <div class="order-card-body">
+          <div class="order-items-mini">
+            {% for item in order.items.all %}
+            <div class="order-item-mini">
+              <span>
+                {{ item.product.name }}
+                {% if item.size %}({{ item.size }}){% endif %}
+                × {{ item.quantity }}
+              </span>
+              <span>${{ item.subtotal }}</span>
+            </div>
+            {% empty %}
+            <p style="font-size:.85rem;color:var(--gray-600);">No items</p>
+            {% endfor %}
+          </div>
+          {% if order.shipping_name %}
+          <p style="font-size:.8rem;color:var(--gray-600);">
+            📦 Shipped to: {{ order.shipping_name }}, {{ order.shipping_city }}
+          </p>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-icon">📦</div>
+      <h3>No Orders Yet</h3>
+      <p>You haven't placed any orders. Start shopping to see them here.</p>
+      <a href="{% url 'product_list' %}" class="btn btn-primary" id="start-shopping-btn">
+        Browse T-Shirts →
+      </a>
+    </div>
+    {% endif %}
+
+  </div>
+</section>
+
+{% endblock %}

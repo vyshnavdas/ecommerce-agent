@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}Order Confirmed! | TShirt Co.{% endblock %}
+
+{% block content %}
+<section class="result-page" aria-label="Order success">
+  <div class="container">
+    <div class="result-card">
+      <div class="result-icon">🎉</div>
+      <h1 style="color:var(--charcoal);">Order Confirmed!</h1>
+      {% if order %}
+      <p>
+        Thank you for your purchase! Your order <strong>#{{ order.id }}</strong>
+        has been placed successfully.
+      </p>
+      <div style="background:var(--gray-100);border-radius:var(--radius);padding:20px;
+                  margin-bottom:28px;text-align:left;">
+        <p style="font-size:.85rem;color:var(--gray-600);margin-bottom:6px;">Shipping to:</p>
+        <p style="font-weight:600;">{{ order.shipping_name }}</p>
+        <p style="font-size:.88rem;color:var(--charcoal-mid);">
+          {{ order.shipping_address }}<br />
+          {{ order.shipping_city }}, {{ order.shipping_zip }}
+        </p>
+      </div>
+      <div style="font-size:1.1rem;font-weight:700;margin-bottom:28px;">
+        Total paid: <span style="color:var(--mustard);">${{ order.total_amount }}</span>
+      </div>
+      {% else %}
+      <p>Your payment was successful and your order is being processed. Thank you!</p>
+      {% endif %}
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+        <a href="{% url 'product_list' %}" class="btn btn-primary" id="continue-after-order-btn">
+          Continue Shopping →
+        </a>
+        {% if user.is_authenticated %}
+        <a href="{% url 'account' %}" class="btn btn-outline" id="view-orders-btn">View My Orders</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
