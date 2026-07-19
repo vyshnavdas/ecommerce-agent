@@ -21,7 +21,7 @@
       {% if step == 'address' or not step %}
       <div>
         <div class="checkout-card">
-          <h2>📦 Shipping Details</h2>
+          <h2>Shipping Details</h2>
           <form method="post" action="{% url 'checkout' %}" id="address-form">
             {% csrf_token %}
 
@@ -61,7 +61,7 @@
       {% elif step == 'payment' %}
       <div>
         <div class="checkout-card">
-          <h2>💳 Payment Details</h2>
+          <h2>Payment Details</h2>
 
           <div style="background:var(--gray-100);border-radius:var(--radius);padding:16px 20px;
                       margin-bottom:24px;font-size:.85rem;color:var(--charcoal-mid);">
@@ -79,11 +79,11 @@
 
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;
                         font-size:.78rem;color:var(--gray-600);">
-              🔒 Your payment is encrypted and secured by Stripe
+              <i class="bi bi-shield-lock-fill"></i> Your payment is encrypted and secured by Stripe
             </div>
 
             <button id="submit-payment" class="btn btn-primary btn-full" type="submit">
-              Pay ${{ cart.total }} Now
+              Pay ₹{{ cart.total }} Now
             </button>
 
             <div style="text-align:center;margin-top:12px;">
@@ -105,18 +105,18 @@
             {% if item.size %}({{ item.size }}){% endif %}
             × {{ item.quantity }}
           </span>
-          <span>${{ item.subtotal }}</span>
+          <span>₹{{ item.subtotal }}</span>
         </div>
         {% endfor %}
         <div class="summary-row total">
           <span>Total</span>
-          <span class="amount">${{ cart.total }}</span>
+          <span class="amount">₹{{ cart.total }}</span>
         </div>
         <hr style="border-color:rgba(255,255,255,.1);margin:16px 0;" />
         <div style="font-size:.78rem;color:var(--gray-400);line-height:1.7;">
-          ✅ Free returns within 30 days<br />
-          🚚 Ships in 3–5 business days<br />
-          🔒 SSL encrypted checkout
+          <i class="bi bi-check-lg"></i> Free returns within 30 days<br />
+          <i class="bi bi-truck"></i> Ships in 3–5 business days<br />
+          <i class="bi bi-shield-lock"></i> SSL encrypted checkout
         </div>
       </aside>
 

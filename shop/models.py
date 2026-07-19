@@ -30,7 +30,7 @@ class Product(models.Model):
 
 class ProductImage(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='images')
-    image = models.ImageField(upload_to='products/')
+    image = models.URLField(max_length=500)
 
     def __str__(self):
         return f"Image for {self.product.name}"
@@ -100,3 +100,14 @@ class CartItem(models.Model):
 
     def subtotal(self):
         return self.product.price * self.quantity
+
+
+class Review(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reviews', null=True, blank=True)
+    rating = models.IntegerField(choices=[(i, i) for i in range(1, 6)])
+    comment = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Review for {self.product.name} by {self.user.username if self.user else 'Guest'}"

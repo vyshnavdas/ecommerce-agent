@@ -35,7 +35,7 @@
           <div style="display:flex;align-items:center;gap:12px;">
             <span class="status-badge status-{{ order.status }}">{{ order.get_status_display }}</span>
             <span style="font-family:'Playfair Display',serif;font-weight:700;">
-              ${{ order.total_amount }}
+              ₹{{ order.total_amount }}
             </span>
           </div>
         </div>
@@ -48,7 +48,7 @@
                 {% if item.size %}({{ item.size }}){% endif %}
                 × {{ item.quantity }}
               </span>
-              <span>${{ item.subtotal }}</span>
+              <span>₹{{ item.subtotal }}</span>
             </div>
             {% empty %}
             <p style="font-size:.85rem;color:var(--gray-600);">No items</p>
@@ -56,7 +56,7 @@
           </div>
           {% if order.shipping_name %}
           <p style="font-size:.8rem;color:var(--gray-600);">
-            📦 Shipped to: {{ order.shipping_name }}, {{ order.shipping_city }}
+            <i class="bi bi-box-seam"></i> Shipped to: {{ order.shipping_name }}, {{ order.shipping_city }}
           </p>
           {% endif %}
         </div>
@@ -66,7 +66,7 @@
 
     {% else %}
     <div class="empty-state">
-      <div class="empty-icon">📦</div>
+      <div class="empty-icon"><i class="bi bi-box-seam" style="font-size: 3rem; opacity: 0.3;"></i></div>
       <h3>No Orders Yet</h3>
       <p>You haven't placed any orders. Start shopping to see them here.</p>
       <a href="{% url 'product_list' %}" class="btn btn-primary" id="start-shopping-btn">

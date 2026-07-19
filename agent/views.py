@@ -30,7 +30,16 @@ def chat(request):
         config={"configurable": {"thread_id": "admin"}}
     )
 
-    ai_reply = response["messages"][-1].content
+    ai_msg = response["messages"][-1]
+    if isinstance(ai_msg.content, list):
+        ai_reply = " ".join(
+            block.get("text", "")
+            for block in ai_msg.content
+            if isinstance(block, dict) and block.get("type") == "text"
+        )
+    else:
+        ai_reply = ai_msg.content
+
     return JsonResponse({"response": ai_reply})
 
 @csrf_exempt

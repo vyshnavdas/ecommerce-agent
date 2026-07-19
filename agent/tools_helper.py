@@ -8,23 +8,67 @@ def generate_sql(user_query: str, model) -> str:
         Columns:
         - id (PK)
         - name
+        - description
         - price
         - sku_code
         - stock
+        - available_sizes  (JSON list, e.g. ["S","M","L"])
+        - is_featured      (boolean)
 
         Table: shop_order
         Columns:
         - id (PK)
+        - user_id          (FK -> auth_user.id, nullable)
         - created_at
         - total_amount
+        - status           (pending | paid | shipped | delivered | cancelled)
+        - stripe_payment_intent_id
+        - shipping_name
+        - shipping_address
+        - shipping_city
+        - shipping_zip
 
         Table: shop_orderitem
         Columns:
         - id (PK)
-        - order_id (FK -> shop_order.id)
+        - order_id   (FK -> shop_order.id)
         - product_id (FK -> shop_product.id)
+        - size
         - quantity
         - price
+
+        Table: shop_cart
+        Columns:
+        - id (PK)
+        - user_id     (FK -> auth_user.id, nullable)
+        - session_key
+        - created_at
+        - updated_at
+
+        Table: shop_cartitem
+        Columns:
+        - id (PK)
+        - cart_id    (FK -> shop_cart.id)
+        - product_id (FK -> shop_product.id)
+        - size
+        - quantity
+
+        Table: auth_user
+        Columns:
+        - id (PK)
+        - username
+        - email
+        - date_joined
+        - is_active
+
+        Table: shop_review
+        Columns:
+        - id (PK)
+        - product_id   (FK -> shop_product.id)
+        - user_id      (FK -> auth_user.id, nullable)
+        - rating       (integer, 1-5)
+        - comment
+        - created_at
     """
 
     response = model.invoke([

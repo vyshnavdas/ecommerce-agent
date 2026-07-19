@@ -52,7 +52,7 @@
       <div class="feature-item">
         <span class="feature-icon">🚚</span>
         <h4>Free Shipping</h4>
-        <p>On all orders over $50. Delivered in 3–5 business days.</p>
+        <p>On all orders over ₹50. Delivered in 3–5 business days.</p>
       </div>
       <div class="feature-item">
         <span class="feature-icon">↩️</span>
@@ -79,7 +79,11 @@
         <a href="{% url 'product_detail' product.pk %}" aria-label="View {{ product.name }}">
           <div class="product-card-image">
             <span class="featured-tag">Featured</span>
-            <span class="product-placeholder-icon">👕</span>
+            {% if product.images.all %}
+              <img src="{{ product.images.first.image }}" alt="{{ product.name }}" style="width:100%; height:100%; object-fit:cover; position:relative; z-index:1;" />
+            {% else %}
+              <span class="product-placeholder-icon">👕</span>
+            {% endif %}
           </div>
         </a>
         <div class="product-card-body">
@@ -93,7 +97,7 @@
           </div>
           {% endif %}
           <div class="product-card-footer">
-            <span class="product-price">${{ product.price }}</span>
+            <span class="product-price">₹{{ product.price }}</span>
             <a href="{% url 'product_detail' product.pk %}"
                class="btn btn-primary btn-sm" id="feat-view-{{ product.pk }}">
               View

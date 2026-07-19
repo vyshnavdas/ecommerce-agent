@@ -46,9 +46,13 @@
             {% if product.is_featured %}
             <span style="position:absolute;top:12px;left:12px;background:var(--mustard);color:var(--black);
                           font-size:.65rem;font-weight:800;padding:3px 10px;border-radius:99px;
-                          letter-spacing:.08em;text-transform:uppercase;">Featured</span>
+                          letter-spacing:.08em;text-transform:uppercase;z-index:2;">Featured</span>
             {% endif %}
-            <span class="product-placeholder-icon">👕</span>
+            {% if product.images.all %}
+              <img src="{{ product.images.first.image }}" alt="{{ product.name }}" style="width:100%; height:100%; object-fit:cover; position:relative; z-index:1;" />
+            {% else %}
+              <i class="bi bi-image" style="font-size: 2.5rem; color: var(--gray-300);"></i>
+            {% endif %}
           </div>
         </a>
         <div class="product-card-body">
@@ -62,7 +66,7 @@
           </div>
           {% endif %}
           <div class="product-card-footer">
-            <span class="product-price">${{ product.price }}</span>
+            <span class="product-price">₹{{ product.price }}</span>
             <a href="{% url 'product_detail' product.pk %}"
                class="btn btn-primary btn-sm" id="view-product-{{ product.pk }}">
               View →
@@ -75,7 +79,7 @@
 
     {% else %}
     <div class="empty-state">
-      <div class="empty-icon">🔍</div>
+      <div class="empty-icon"><i class="bi bi-search" style="font-size: 3rem; opacity: 0.3;"></i></div>
       <h3>No T-Shirts Found</h3>
       <p>
         {% if size_filter %}

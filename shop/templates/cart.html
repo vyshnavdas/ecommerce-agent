@@ -23,12 +23,18 @@
         <div class="cart-items-list" role="list" aria-label="Cart items">
           {% for item in cart.items.all %}
           <div class="cart-item-card" role="listitem" aria-label="{{ item.product.name }}">
-            <div class="cart-item-thumb" aria-hidden="true">👕</div>
+            <div class="cart-item-thumb" aria-hidden="true">
+              {% if item.product.images.all %}
+                <img src="{{ item.product.images.first.image }}" alt="{{ item.product.name }}" style="width:100%; height:100%; object-fit:cover; border-radius:var(--radius-sm);" />
+              {% else %}
+                <i class="bi bi-image" style="font-size: 1.5rem; color: var(--gray-300);"></i>
+              {% endif %}
+            </div>
             <div class="cart-item-info">
               <h3 class="cart-item-name">{{ item.product.name }}</h3>
               <p class="cart-item-meta">
                 {% if item.size %}Size: <strong>{{ item.size }}</strong> · {% endif %}
-                ${{ item.product.price }} each
+                ₹{{ item.product.price }} each
               </p>
               <!-- Qty controls -->
               <div class="cart-item-qty">
@@ -46,7 +52,7 @@
               </div>
             </div>
             <div style="display:flex;flex-direction:column;align-items:flex-end;gap:12px;">
-              <span class="cart-item-price">${{ item.subtotal }}</span>
+              <span class="cart-item-price">₹{{ item.subtotal }}</span>
               <form method="post" action="{% url 'remove_from_cart' item.id %}">
                 {% csrf_token %}
                 <button type="submit" class="btn btn-danger btn-sm"
@@ -72,7 +78,7 @@
         <h3>Order Summary</h3>
         <div class="summary-row">
           <span>Subtotal ({{ cart.item_count }} item{{ cart.item_count|pluralize }})</span>
-          <span>${{ cart.total }}</span>
+          <span>₹{{ cart.total }}</span>
         </div>
         <div class="summary-row">
           <span>Shipping</span>
@@ -80,7 +86,7 @@
             {% if cart.total >= 50 %}
               <span style="color:var(--mustard);font-weight:600;">Free</span>
             {% else %}
-              $5.99
+              ₹5.99
             {% endif %}
           </span>
         </div>
@@ -88,9 +94,9 @@
           <span>Total</span>
           <span class="amount">
             {% if cart.total >= 50 %}
-              ${{ cart.total }}
+              ₹{{ cart.total }}
             {% else %}
-              ${{ cart.total|floatformat:2 }}
+              ₹{{ cart.total|floatformat:2 }}
             {% endif %}
           </span>
         </div>
@@ -101,7 +107,7 @@
         </div>
         {% if cart.total < 50 %}
         <p style="text-align:center;margin-top:12px;font-size:.78rem;color:var(--gray-400);">
-          Add ${{ cart.total|floatformat:2 }} more for free shipping
+          Add ₹{{ cart.total|floatformat:2 }} more for free shipping
         </p>
         {% endif %}
         <div style="text-align:center;margin-top:20px;font-size:.75rem;color:var(--gray-400);">
@@ -113,7 +119,7 @@
 
     {% else %}
     <div class="empty-state">
-      <div class="empty-icon">🛒</div>
+      <div class="empty-icon"><i class="bi bi-cart-x" style="font-size: 3rem; opacity: 0.3;"></i></div>
       <h3>Your Cart is Empty</h3>
       <p>Looks like you haven't added any T-shirts yet.</p>
       <a href="{% url 'product_list' %}" class="btn btn-primary" id="shop-from-cart-btn">

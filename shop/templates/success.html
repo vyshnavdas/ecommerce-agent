@@ -6,7 +6,7 @@
 <section class="result-page" aria-label="Order success">
   <div class="container">
     <div class="result-card">
-      <div class="result-icon">🎉</div>
+      <div class="result-icon"><i class="bi bi-check-circle-fill text-success" style="font-size: 4rem;"></i></div>
       <h1 style="color:var(--charcoal);">Order Confirmed!</h1>
       {% if order %}
       <p>
@@ -23,7 +23,7 @@
         </p>
       </div>
       <div style="font-size:1.1rem;font-weight:700;margin-bottom:28px;">
-        Total paid: <span style="color:var(--mustard);">${{ order.total_amount }}</span>
+        Total paid: <span style="color:var(--mustard);">₹{{ order.total_amount }}</span>
       </div>
       {% else %}
       <p>Your payment was successful and your order is being processed. Thank you!</p>

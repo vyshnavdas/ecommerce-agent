@@ -7,6 +7,7 @@
   <meta name="description" content="{% block meta_description %}TShirt Co. — Premium Men's T-Shirts{% endblock %}" />
   <title>{% block title %}T-SHIRTS | Store{% endblock %}</title>
   <link rel="stylesheet" href="{% static 'shop/css/style.css' %}" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" />
   {% block extra_head %}{% endblock %}
 </head>
 <body>
@@ -16,8 +17,7 @@
 
     <!-- Left: nav links -->
     <ul class="navbar-nav" role="list">
-      <li><a href="{% url 'product_list' %}" id="nav-buy">Buy T-Shirts</a></li>
-      <li><a href="{% url 'product_list' %}" id="nav-men">Men</a></li>
+      <li><a href="{% url 'product_list' %}" id="nav-men">Shop</a></li>
       <li><a href="{% url 'landing' %}" id="nav-about">About</a></li>
       <li><a href="#" id="nav-contact">Contact</a></li>
     </ul>
@@ -30,14 +30,14 @@
 
     <!-- Right: actions -->
     <div class="navbar-actions">
-      <a href="{% url 'product_list' %}" class="nav-icon-btn" id="nav-search" aria-label="Search">🔍</a>
+      <a href="{% url 'product_list' %}" class="nav-icon-btn" id="nav-search" aria-label="Search"><i class="bi bi-search"></i></a>
 
       {% if cart_count > 0 %}
-        <span class="nav-price">${{ cart_total|default:"0.00" }}</span>
+        <span class="nav-price">₹{{ cart_total|default:"0.00" }}</span>
       {% endif %}
 
       <div class="nav-cart-wrap">
-        <a href="{% url 'cart_detail' %}" class="nav-icon-btn" id="nav-cart" aria-label="Shopping cart">🛒</a>
+        <a href="{% url 'cart_detail' %}" class="nav-icon-btn" id="nav-cart" aria-label="Shopping cart"><i class="bi bi-cart"></i></a>
         {% if cart_count > 0 %}
           <span class="cart-badge">{{ cart_count }}</span>
         {% endif %}
@@ -58,7 +58,7 @@
   <div class="messages-list" aria-live="polite">
     {% for message in messages %}
     <div class="alert alert-{% if message.tags == 'error' %}error{% elif message.tags == 'warning' %}warning{% elif message.tags == 'success' %}success{% else %}info{% endif %}">
-      {% if message.tags == 'success' %}✅{% elif message.tags == 'error' %}❌{% elif message.tags == 'warning' %}⚠️{% else %}ℹ️{% endif %}
+      {% if message.tags == 'success' %}<i class="bi bi-check-circle-fill"></i>{% elif message.tags == 'error' %}<i class="bi bi-x-circle-fill"></i>{% elif message.tags == 'warning' %}<i class="bi bi-exclamation-triangle-fill"></i>{% else %}<i class="bi bi-info-circle-fill"></i>{% endif %}
       {{ message }}
     </div>
     {% endfor %}
@@ -110,7 +110,7 @@
       </div>
       <div class="footer-bottom">
         <span>© 2026 T-Shirts Store. All rights reserved.</span>
-        <span>Secured by Stripe 🔒</span>
+        <span>Secured by Stripe <i class="bi bi-lock-fill"></i></span>
       </div>
     </div>
   </footer>

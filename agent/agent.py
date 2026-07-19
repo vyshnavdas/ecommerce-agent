@@ -6,7 +6,7 @@ from .tools import add_product, update_product, delete_product, analytics_tool
 from langchain.messages import RemoveMessage, AIMessage
 from langgraph.graph.message import REMOVE_ALL_MESSAGES
 from langchain.agents.middleware import before_model
-from langchain_groq import ChatGroq
+from langchain_google_genai import ChatGoogleGenerativeAI
 from datetime import datetime
 
 load_dotenv()
@@ -17,9 +17,9 @@ saver_cm = PostgresSaver.from_conn_string(DB_URI)
 checkpointer = saver_cm.__enter__()
 checkpointer.setup()
 
-model = ChatGroq(
-        model="qwen/qwen3-32b",
-        temperature=0,
+model = ChatGoogleGenerativeAI(
+    model="gemini-3.1-flash-lite",
+    api_key=os.getenv("GOOGLE_API_KEY"),
     )
 
 tools = [add_product, update_product, delete_product, analytics_tool]
@@ -45,7 +45,11 @@ SYSTEM_PROMPT = f"""
 
     Product Management:
     - Use add_product when creating a product
-    - Use update_product when modifying a product
+      - Always ask for: name, price, stock
+      - Optionally ask for: description, available_sizes (list like ["S","M","L","XL"]), is_featured
+      - is_featured=True makes the product appear on the landing page hero section
+    - Use update_product when modifying a product — you can update any of:
+      name, price, stock, description, available_sizes, is_featured
     - Use delete_product only after explicit user confirmation
 
     Analytics:
@@ -75,16 +79,32 @@ SYSTEM_PROMPT = f"""
 def trim_messages(state, runtime):
     messages = state["messages"]
 
-    # STEP 1: keep last N messages FIRST
-    MAX_MESSAGES = 5
-    recent = messages[-MAX_MESSAGES:]
+    # Group messages into turns starting with HumanMessage
+    turns = []
+    current_turn = []
+    for msg in messages:
+        if msg.type == "human" and current_turn:
+            turns.append(current_turn)
+            current_turn = [msg]
+        else:
+            current_turn.append(msg)
+    if current_turn:
+        turns.append(current_turn)
 
-    # STEP 2: remove reasoning_content only from recent messages
+    # Keep only the last 3 complete turns
+    MAX_TURNS = 3
+    recent_turns = turns[-MAX_TURNS:]
+
     cleaned = []
-    for msg in recent:
-        if isinstance(msg, AIMessage):
-            msg.additional_kwargs.pop("reasoning_content", None)
-        cleaned.append(msg)
+    for turn in recent_turns:
+        for msg in turn:
+            if isinstance(msg, AIMessage):
+                msg.additional_kwargs.pop("reasoning_content", None)
+                msg.additional_kwargs.pop("reasoning", None)
+                if hasattr(msg, "response_metadata") and isinstance(msg.response_metadata, dict):
+                    msg.response_metadata.pop("reasoning_content", None)
+                    msg.response_metadata.pop("reasoning", None)
+            cleaned.append(msg)
 
     return {
         "messages": [

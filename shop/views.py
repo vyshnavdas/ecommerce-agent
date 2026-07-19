@@ -1,4 +1,5 @@
 from django.shortcuts import render, get_object_or_404, redirect
+from django.urls import reverse
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
@@ -7,7 +8,7 @@ from django.conf import settings
 from django.views.decorators.http import require_POST
 import stripe
 
-from .models import Product, Cart, CartItem, Order, OrderItem
+from .models import Product, Cart, CartItem, Order, OrderItem, Review
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
@@ -55,7 +56,17 @@ def product_list(request):
 
 def product_detail(request, pk):
     product = get_object_or_404(Product, pk=pk)
-    return render(request, 'product_detail.html', {'product': product})
+    reviews = product.reviews.all().order_by('-created_at')
+    avg_rating = 0.0
+    if reviews.exists():
+        avg_rating = sum(r.rating for r in reviews) / reviews.count()
+    return render(request, 'product_detail.html', {
+        'product': product,
+        'reviews': reviews,
+        'avg_rating': round(avg_rating, 1),
+        'avg_rating_int': int(round(avg_rating)),
+        'rating_range': range(1, 6),
+    })
 
 
 # ---------------------------------------------------------------------------
@@ -113,39 +124,27 @@ def checkout(request):
         return redirect('cart_detail')
 
     if request.method == 'POST':
-        # Collect shipping details
-        shipping_name = request.POST.get('shipping_name', '')
-        shipping_address = request.POST.get('shipping_address', '')
-        shipping_city = request.POST.get('shipping_city', '')
-        shipping_zip = request.POST.get('shipping_zip', '')
+        # 1. Collect shipping details from local form
+        shipping_name = request.POST.get('shipping_name', '').strip()
+        shipping_address = request.POST.get('shipping_address', '').strip()
+        shipping_city = request.POST.get('shipping_city', '').strip()
+        shipping_zip = request.POST.get('shipping_zip', '').strip()
 
-        amount_cents = int(cart.total() * 100)
+        if not (shipping_name and shipping_address and shipping_city and shipping_zip):
+            messages.error(request, 'Please fill in all shipping details.')
+            return render(request, 'checkout.html', {'cart': cart, 'step': 'address'})
 
-        try:
-            intent = stripe.PaymentIntent.create(
-                amount=amount_cents,
-                currency='usd',
-                automatic_payment_methods={'enabled': True},
-                metadata={
-                    'cart_id': cart.id,
-                    'user_id': request.user.id if request.user.is_authenticated else 'guest',
-                },
-            )
-        except stripe.error.StripeError as e:
-            messages.error(request, f'Payment error: {e.user_message}')
-            return redirect('checkout')
-
-        # Create order
+        # 2. Create pending Order in DB
         order = Order.objects.create(
             user=request.user if request.user.is_authenticated else None,
             total_amount=cart.total(),
             status='pending',
-            stripe_payment_intent_id=intent.id,
             shipping_name=shipping_name,
             shipping_address=shipping_address,
             shipping_city=shipping_city,
             shipping_zip=shipping_zip,
         )
+
         for ci in cart.items.all():
             OrderItem.objects.create(
                 order=order,
@@ -155,22 +154,48 @@ def checkout(request):
                 price=ci.product.price,
             )
 
-        # Store in session for success page
+        # Store pending order ID in session
         request.session['pending_order_id'] = order.id
-        request.session['stripe_client_secret'] = intent.client_secret
 
-        return render(request, 'checkout.html', {
-            'cart': cart,
-            'stripe_publishable_key': settings.STRIPE_PUBLISHABLE_KEY,
-            'client_secret': intent.client_secret,
-            'order': order,
-            'shipping_name': shipping_name,
-            'shipping_address': shipping_address,
-            'shipping_city': shipping_city,
-            'shipping_zip': shipping_zip,
-            'step': 'payment',
-        })
+        # 3. Build line items for Stripe Checkout
+        line_items = []
+        for item in cart.items.all():
+            line_items.append({
+                'price_data': {
+                    'currency': 'inr',
+                    'product_data': {
+                        'name': f"{item.product.name} ({item.size})" if item.size else item.product.name,
+                    },
+                    'unit_amount': int(item.product.price * 100),
+                },
+                'quantity': item.quantity,
+            })
 
+        try:
+            # 4. Create Stripe Checkout Session
+            session = stripe.checkout.Session.create(
+                payment_method_types=['card'],
+                line_items=line_items,
+                mode='payment',
+                success_url=request.build_absolute_uri(reverse('checkout_success')) + '?session_id={CHECKOUT_SESSION_ID}',
+                cancel_url=request.build_absolute_uri(reverse('checkout_cancel')),
+                metadata={
+                    'order_id': order.id,
+                }
+            )
+            
+            # Save Stripe session/intent ID on order
+            order.stripe_payment_intent_id = session.id
+            order.save()
+            
+            return redirect(session.url, code=303)
+        except Exception as e:
+            # Roll back order if Stripe session creation fails
+            order.delete()
+            messages.error(request, f"Stripe Checkout error: {str(e)}")
+            return render(request, 'checkout.html', {'cart': cart, 'step': 'address'})
+
+    # GET request: render the shipping address form
     return render(request, 'checkout.html', {
         'cart': cart,
         'step': 'address',
@@ -178,20 +203,41 @@ def checkout(request):
 
 
 def checkout_success(request):
-    order_id = request.session.pop('pending_order_id', None)
-    order = None
-    if order_id:
-        order = Order.objects.filter(id=order_id).first()
-        if order:
+    session_id = request.GET.get('session_id')
+    if not session_id:
+        return redirect('landing')
+
+    try:
+        session = stripe.checkout.Session.retrieve(session_id)
+        metadata = getattr(session, 'metadata', {})
+        if hasattr(metadata, 'to_dict'):
+            metadata = metadata.to_dict()
+        order_id = metadata.get('order_id')
+        
+        if not order_id:
+            return redirect('landing')
+            
+        order = get_object_or_404(Order, id=order_id)
+        
+        # Verify payment status
+        if session.payment_status == 'paid' or session.status == 'complete':
             order.status = 'paid'
             order.save()
+            
             # Clear cart
             cart = _get_or_create_cart(request)
             cart.items.all().delete()
-    return render(request, 'success.html', {'order': order})
+            
+        return render(request, 'success.html', {'order': order})
+    except Exception as e:
+        messages.error(request, f"Error completing checkout: {str(e)}")
+        return redirect('cart_detail')
 
 
 def checkout_cancel(request):
+    order_id = request.session.pop('pending_order_id', None)
+    if order_id:
+        Order.objects.filter(id=order_id, status='pending').delete()
     return render(request, 'cancel.html')
 
 
@@ -244,3 +290,36 @@ def logout_view(request):
 def account(request):
     orders = Order.objects.filter(user=request.user).order_by('-created_at')
     return render(request, 'account.html', {'orders': orders})
+
+
+@login_required
+@require_POST
+def add_review(request, pk):
+    product = get_object_or_404(Product, pk=pk)
+    rating = request.POST.get('rating')
+    comment = request.POST.get('comment', '').strip()
+
+    if not rating:
+        messages.error(request, 'Please provide a rating.')
+        return redirect('product_detail', pk=pk)
+
+    try:
+        rating = int(rating)
+        if rating < 1 or rating > 5:
+            raise ValueError()
+    except ValueError:
+        messages.error(request, 'Invalid rating.')
+        return redirect('product_detail', pk=pk)
+
+    if not comment:
+        messages.error(request, 'Please write a comment.')
+        return redirect('product_detail', pk=pk)
+
+    Review.objects.create(
+        product=product,
+        user=request.user,
+        rating=rating,
+        comment=comment
+    )
+    messages.success(request, 'Review submitted successfully!')
+    return redirect('product_detail', pk=pk)
