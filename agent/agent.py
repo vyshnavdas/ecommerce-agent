@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 from langchain.agents import create_agent
 from langgraph.checkpoint.postgres import PostgresSaver
-from .tools import add_product, update_product, delete_product, analytics_tool
+from .tools import add_product, update_product, delete_product, analytics_tool, send_email_tool
 from langchain.messages import RemoveMessage, AIMessage
 from langgraph.graph.message import REMOVE_ALL_MESSAGES
 from langchain.agents.middleware import before_model
@@ -22,7 +22,7 @@ model = ChatGoogleGenerativeAI(
     api_key=os.getenv("GOOGLE_API_KEY"),
     )
 
-tools = [add_product, update_product, delete_product, analytics_tool]
+tools = [add_product, update_product, delete_product, analytics_tool, send_email_tool]
 
 current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 SYSTEM_PROMPT = f"""
@@ -62,6 +62,9 @@ SYSTEM_PROMPT = f"""
     - NEVER generate SQL or database queries in your response
     - ALWAYS rely on analytics_tool for data retrieval
     - You don't need to generate sql queries and don't ask user for sql queries 
+
+    Email:
+    - Use send_email_tool to send emails to customers or admins (e.g. sending reports, order status updates, confirmation notices, etc.)
 
     Behavior:
     - If a request is ambiguous, ask follow-up questions before using a tool

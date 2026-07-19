@@ -147,3 +147,39 @@ def analytics_tool(query: str) -> str:
     except Exception as e:
         return f"Error: {str(e)}"
 
+
+@tool
+def send_email_tool(
+    recipient: str,
+    subject: str,
+    body: str,
+) -> str:
+    """
+    Sends an email to a customer or admin.
+
+    Args:
+        recipient: Destination email address
+        subject: Subject of the email
+        body: Plain text body of the email
+    """
+    from django.core.mail import send_mail
+    from django.conf import settings
+    import re
+    
+    try:
+        if not re.match(r"[^@]+@[^@]+\.[^@]+", recipient):
+            return f"Error: Invalid recipient email address: '{recipient}'"
+
+        from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'store@example.com')
+        
+        send_mail(
+            subject=subject,
+            message=body,
+            from_email=from_email,
+            recipient_list=[recipient],
+            fail_silently=False,
+        )
+        return f"Email sent successfully to {recipient} with subject '{subject}'"
+    except Exception as e:
+        return f"Error sending email: {str(e)}"
+
