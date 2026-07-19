@@ -9,12 +9,17 @@ import os
 import uuid
 from langchain_core.messages import HumanMessage, AIMessage
 import re
+from django.contrib.admin.views.decorators import staff_member_required
 
+@staff_member_required
 def chat_page(request):
     return render(request, 'chat.html')
 
 @csrf_exempt
 def chat(request):
+    if not (request.user.is_authenticated and request.user.is_staff):
+        return JsonResponse({"error": "Forbidden: Admin access required"}, status=403)
+
     if request.method != "POST":
         return JsonResponse({"error": "Method not allowed"}, status=405)
 
@@ -44,6 +49,9 @@ def chat(request):
 
 @csrf_exempt
 def upload_image(request):
+    if not (request.user.is_authenticated and request.user.is_staff):
+        return JsonResponse({"error": "Forbidden: Admin access required"}, status=403)
+
     if request.method != "POST":
         return JsonResponse({"error": "Method not allowed"}, status=405)
 
@@ -59,6 +67,9 @@ def upload_image(request):
     return JsonResponse({"url": url})
 
 def chat_history(request):
+    if not (request.user.is_authenticated and request.user.is_staff):
+        return JsonResponse({"error": "Forbidden: Admin access required"}, status=403)
+
     config = {"configurable": {"thread_id": "admin"}}
     state = agent.get_state(config)
     messages = state.values.get("messages", [])[-20:]
