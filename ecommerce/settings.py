@@ -135,7 +135,15 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
-CELERY_BROKER_URL = 'redis://localhost:6379/0'
+# Celery settings
+CELERY_BROKER_URL = 'filesystem://'
+CELERY_BROKER_TRANSPORT_OPTIONS = {
+    'data_folder_in': os.path.join(BASE_DIR, 'celery_queue', 'out'),
+    'data_folder_out': os.path.join(BASE_DIR, 'celery_queue', 'out'),
+}
+# Ensure directories for the filesystem broker exist
+os.makedirs(CELERY_BROKER_TRANSPORT_OPTIONS['data_folder_in'], exist_ok=True)
+
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
 # Stripe

@@ -1,28 +1,42 @@
 import os
+import sys
+import django
+from django.apps import apps
 from dotenv import load_dotenv
+
+load_dotenv()
+
+if not apps.ready:
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'ecommerce.settings')
+    django.setup()
+
 from langchain.agents import create_agent
 from langgraph.checkpoint.postgres import PostgresSaver
-from .tools import add_product, update_product, delete_product, analytics_tool, send_email_tool
+from agent.tools import add_product, update_product, delete_product, analytics_tool, send_email_tool, schedule_task, list_scheduled_tasks, cancel_scheduled_task
 from langchain.messages import RemoveMessage, AIMessage
 from langgraph.graph.message import REMOVE_ALL_MESSAGES
 from langchain.agents.middleware import before_model
 from langchain_google_genai import ChatGoogleGenerativeAI
 from datetime import datetime
 
-load_dotenv()
-
 DB_URI = os.getenv('DATABASE_URL')
 
-saver_cm = PostgresSaver.from_conn_string(DB_URI)
-checkpointer = saver_cm.__enter__()
-checkpointer.setup()
+# Check if running under LangGraph Studio / API dev server
+is_langgraph = any(k.startswith("LANGGRAPH_") for k in os.environ) or (len(sys.argv) > 0 and 'langgraph' in sys.argv[0])
+
+if is_langgraph:
+    checkpointer = None
+else:
+    saver_cm = PostgresSaver.from_conn_string(DB_URI)
+    checkpointer = saver_cm.__enter__()
+    checkpointer.setup()
 
 model = ChatGoogleGenerativeAI(
     model="gemini-3.1-flash-lite",
     api_key=os.getenv("GOOGLE_API_KEY"),
     )
 
-tools = [add_product, update_product, delete_product, analytics_tool, send_email_tool]
+tools = [add_product, update_product, delete_product, analytics_tool, send_email_tool, schedule_task, list_scheduled_tasks, cancel_scheduled_task]
 
 current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 SYSTEM_PROMPT = f"""
@@ -65,6 +79,22 @@ SYSTEM_PROMPT = f"""
 
     Email:
     - Use send_email_tool to send emails to customers or admins (e.g. sending reports, order status updates, confirmation notices, etc.)
+
+    Task Scheduling:
+    - Use schedule_task to schedule background tasks. Specify `task_name` using their registered Celery name.
+    - IMPORTANT: `task_args` and `task_kwargs` MUST be passed as JSON-serialized strings (e.g. task_args='["test@example.com"]' or task_args='["SKU-XYZ", 12.99]'). Do NOT pass raw python lists or dicts.
+    - Supported tasks:
+      - "agent.tasks.send_weekly_sales_report": To send a weekly sales summary. Pass positional `task_args` (JSON array of string): e.g. task_args='["recipient_email"]'.
+      - "agent.tasks.restore_product_price": To reset a product price back to original. Pass positional `task_args` (JSON array): e.g. task_args='["sku_code", 12.99]'.
+      - "agent.tasks.send_email": To send a custom scheduled email. Pass positional `task_args` (JSON array of strings): e.g. task_args='["recipient", "subject", "body"]'.
+    - Schedule Types:
+      - "cron": For recurring tasks (e.g. sending a sales report every Monday). Requires a standard 5-field cron_expression like "0 9 * * 1" (minute hour day_of_month month_of_year day_of_week).
+      - "clocked": For one-off tasks (e.g. running an offer for 24 hours). Requires run_at (either absolute "YYYY-MM-DD HH:MM:SS" or relative e.g., "in 24 hours", "in 1 hour", "in 15 minutes").
+    - Running an Offer for a duration (e.g. 24 hours):
+      1. First update the product's price immediately using update_product.
+      2. Immediately schedule the price restoration using schedule_task with task_name="agent.tasks.restore_product_price", schedule_type="clocked", run_at="in 24 hours", and task_args as a JSON string containing the sku_code and original_price (e.g. task_args='["SKU-XYZ", 10.99]').
+    - Use list_scheduled_tasks to check active scheduled tasks.
+    - Use cancel_scheduled_task to cancel/remove a scheduled task by name.
 
     Behavior:
     - If a request is ambiguous, ask follow-up questions before using a tool

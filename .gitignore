@@ -1,6 +1,25 @@
+# Environments
 .env
 env/
-__pycache__/
+
+
+# Python Cache and compiled files
+**/__pycache__/
+*.py[cod]
+*$py.class
+
+# Django media files
 media/
-agent/migrations
-shop/migrations
+
+# Migration exclusions (custom project setup)
+agent/migrations/
+shop/migrations/
+
+# Celery local Broker directories
+celery_queue/
+control/
+
+# LangGraph / LangChain Studio
+langgraph_studio/
+.langgraph_api/
+
