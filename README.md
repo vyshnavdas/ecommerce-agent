@@ -104,17 +104,17 @@ python -m pip install -r requirements.txt
 
 ### 4. Configure PostgreSQL
 
-Create a PostgreSQL database named `ecommerce`. The current development defaults in `ecommerce/settings.py` are:
+Create a PostgreSQL database named `ecommerce`. Database credentials are read from `.env`; they are not stored in source code.
 
-```text
-Database: ecommerce
-User:     postgres
-Password: password
-Host:     localhost
-Port:     5432
+```dotenv
+DB_NAME=ecommerce
+DB_USER=postgres
+DB_PASSWORD=your_postgresql_password
+DB_HOST=localhost
+DB_PORT=5432
 ```
 
-Update those settings before using a different account or any production environment.
+Set `DATABASE_URL` to the equivalent PostgreSQL connection string because the LangGraph checkpointer uses it.
 
 ### 5. Create `.env`
 
@@ -127,14 +127,37 @@ cp .env.sample .env
 At minimum, set the following values in `.env`:
 
 ```dotenv
+SECRET_KEY=generate-a-unique-random-secret
+DEBUG=True
+ALLOWED_HOSTS=localhost,127.0.0.1
+CSRF_TRUSTED_ORIGINS=http://localhost:8000,http://127.0.0.1:8000
+DB_NAME=ecommerce
+DB_USER=postgres
+DB_PASSWORD=your_postgresql_password
+DB_HOST=localhost
+DB_PORT=5432
 GOOGLE_API_KEY=your_google_gemini_api_key
 GROQ_SQL_API_KEY=your_groq_api_key
-DATABASE_URL=postgresql://postgres:password@localhost:5432/ecommerce
+DATABASE_URL=postgresql://postgres:your_postgresql_password@localhost:5432/ecommerce
 STRIPE_PUBLISHABLE_KEY=pk_test_replace_me
 STRIPE_SECRET_KEY=sk_test_replace_me
 ```
 
 For local development without SMTP, keep `EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend`.
+
+### Production security
+
+Production must explicitly disable debug mode and use HTTPS:
+
+```dotenv
+DEBUG=False
+ALLOWED_HOSTS=example.com,www.example.com
+CSRF_TRUSTED_ORIGINS=https://example.com,https://www.example.com
+SECURE_SSL_REDIRECT=True
+SECURE_HSTS_SECONDS=31536000
+```
+
+When `DEBUG=False`, the application enables HTTPS redirects, secure session and CSRF cookies, HSTS, a restrictive referrer policy, and `X-Frame-Options: DENY`. Keep `SECRET_KEY`, `DB_PASSWORD`, API keys, and SMTP credentials only in your deployment secret store or environment variables.
 
 ### 6. Run migrations and create a staff user
 
