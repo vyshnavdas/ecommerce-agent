@@ -1,4 +1,6 @@
 from shop.models import Product, ProductImage
+import hashlib
+import json
 import uuid
 from langchain.tools import tool
 from agent.tools_helper import generate_sql, validate_sql, execute_sql
@@ -7,6 +9,18 @@ import os
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+def _scheduled_task_name(task_name: str, args: list, kwargs: dict, identity: str = "") -> str:
+    """Return a stable PeriodicTask name that fits its 200-character field."""
+    payload = json.dumps(
+        {"task": task_name, "args": args, "kwargs": kwargs, "identity": identity},
+        sort_keys=True,
+        default=str,
+        separators=(",", ":"),
+    )
+    digest = hashlib.sha256(payload.encode("utf-8")).hexdigest()[:12]
+    return f"Dynamic: {task_name.rsplit('.', 1)[-1]} [{digest}]"
 
 @tool
 def add_product(
@@ -26,7 +40,7 @@ def add_product(
         price: Price of the product
         stock: Available stock quantity
         description: Optional product description
-        available_sizes: List of available sizes e.g. ["S", "M", "L", "XL"]
+        available_sizes: List of available sizes e.g. ["XS", "S", "M", "L", "XL", "XXL"]
         is_featured: Whether to feature this product on the landing page(do not use string use python boolean value True or False)
         image_urls: List of image URLs for the product
     """
@@ -208,7 +222,6 @@ def schedule_task(
           Format: "minute hour day_of_month month_of_year day_of_week". Use "*" for any.
         run_at: Date/time for clocked tasks (e.g. "2026-07-20 14:00:00" or relative like "in 24 hours", "in 1 hour").
     """
-    import json
     from django_celery_beat.models import PeriodicTask, CrontabSchedule, ClockedSchedule
     from django.utils import timezone
     from datetime import datetime, timedelta
@@ -234,13 +247,6 @@ def schedule_task(
     except Exception as e:
         return f"Error parsing JSON for task_kwargs: {str(e)}"
     
-    # Derive a descriptive name for the task
-    short_task_name = task_name.split(".")[-1]
-    param_str = f"args={args_list}" if args_list else ""
-    if kwargs_dict:
-        param_str += f" kwargs={kwargs_dict}"
-    default_name = f"Dynamic: {short_task_name} ({param_str.strip()})"
-    
     # 2. Handle schedules
     if schedule_type == "cron":
         if not cron_expression:
@@ -256,6 +262,8 @@ def schedule_task(
             month_of_year=parts[3],
             day_of_week=parts[4],
         )
+
+        default_name = _scheduled_task_name(task_name, args_list, kwargs_dict)
         
         task, created = PeriodicTask.objects.update_or_create(
             name=default_name,
@@ -316,7 +324,12 @@ def schedule_task(
             clocked_time=target_time
         )
         
-        unique_name = f"{default_name} (runs at {target_time.strftime('%Y-%m-%d %H:%M:%S')})"
+        unique_name = _scheduled_task_name(
+            task_name,
+            args_list,
+            kwargs_dict,
+            identity=target_time.isoformat(),
+        )
         
         task = PeriodicTask.objects.create(
             name=unique_name,
