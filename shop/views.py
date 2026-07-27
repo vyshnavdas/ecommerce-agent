@@ -5,6 +5,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.conf import settings
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 import stripe
 
@@ -274,8 +275,14 @@ def login_view(request):
         user = authenticate(request, username=username, password=password)
         if user:
             login(request, user)
-            next_url = request.GET.get('next', 'landing')
-            return redirect(next_url)
+            next_url = request.GET.get('next')
+            if next_url and url_has_allowed_host_and_scheme(
+                url=next_url,
+                allowed_hosts={request.get_host()},
+                require_https=request.is_secure(),
+            ):
+                return redirect(next_url)
+            return redirect('landing')
         else:
             messages.error(request, 'Invalid username or password.')
     return render(request, 'login.html')
