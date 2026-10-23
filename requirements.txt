@@ -15,6 +15,6 @@ celery==5.6.3
 django-celery-beat==2.9.0
 
 # Storefront and configuration
-Pillow==12.3.0
+Pillow==13.0.0
 stripe==15.3.1
 python-dotenv==1.2.2
